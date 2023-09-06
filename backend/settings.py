@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_api_key',
     'rest_framework.authtoken',
     'corsheaders',
     'user',
@@ -82,8 +83,11 @@ TEMPLATES = [
 ]
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.AllowAny',),
-    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
+    'DEFAULT_PERMISSION_CLASSES': (
+        # 'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
+        'rest_framework_api_key.permissions.HasAPIKey',
+    ),
     'DEFAULT_AUTHENTICATION_CLASSES': ('rest_framework_simplejwt.authentication.JWTAuthentication',),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
@@ -102,6 +106,8 @@ REST_FRAMEWORK = {
 }
 
 WSGI_APPLICATION = 'backend.wsgi.application'
+
+API_KEY_CUSTOM_HEADER = "HTTP_X_API_KEY"
 
 CORS_ORIGIN_WHITELIST = [
     "http://127.0.0.1:8000"

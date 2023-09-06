@@ -26,12 +26,13 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from user.models import *
 from user.serializers import *
+from rest_framework_api_key.permissions import HasAPIKey
+from rest_framework_api_key.models import APIKey
 
 
 from decouple import Config, RepositoryEnv, Csv
 DOTENV_FILE = './config/.env'
 getenv = Config(RepositoryEnv(DOTENV_FILE))
-
 
 @csrf_exempt
 @api_view(['GET', 'POST'])
@@ -133,7 +134,7 @@ def UserUpdate (request, pk):
 
 @csrf_exempt
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
+@permission_classes([HasAPIKey])
 def DeleteUser (request, pk):
     
     if request.method == 'DELETE':
@@ -151,42 +152,47 @@ def DeleteUser (request, pk):
 
 @csrf_exempt
 @api_view(['GET', 'POST'])
+@permission_classes([IsAdminUser])
+def getKeyApi(request):
+
+    if request.method == 'POST':
+        try:
+            apikeyLength = APIKey.objects.count()
+            print(apikeyLength)
+            api_key, key = APIKey.objects.create_key(
+                name=getenv('NAME_KEY_SERVICE'))
+            # print(api_key)
+            print('key: ', key)
+            formater = {
+                # "api-key": api_key,
+                "api-key": key
+            }
+            return JsonResponse({'code': 200, 'message': formater}, status=200)
+        except:
+            return JsonResponse(status=status.HTTP_404_NOT_FOUND)
+
+
+@csrf_exempt
+@api_view(['GET', 'POST'])
 @permission_classes([AllowAny])
 def UserFetch (request):
     
     if request.method == 'GET' :
         try :
             mastermodel = users.objects.all()
-            masterserializer = UserSerializer(mastermodel, many=True)
+            masterserializer = GetUserSerializer(mastermodel, many=True)
 
             url = "https://reqres.in/api/users"
-            print("GET Data")
-            
-            headers = {
-                'Authorization': getenv('AUTHORIZATION'),
-                'parameter' : 'page',
-                'Content-Type': 'application/json'
-            }
-            response = requests.request("GET", url, headers=headers)
-            datax = response.json()
-            print(datax)
-            
-            if datax == 201:
-    
-                print('Save Data to database')
-                print(datax)
 
-                user_save = users(
-                        id=mastermodel.id,
-                        email=mastermodel.email,
-                        first_name=mastermodel.first_name,
-                        last_name=mastermodel.description,
-                        avatar=mastermodel.avatar
-                )
-                user_save.save()
+            payload = {}
+            headers = {}
+
+            response = requests.request("GET", url, headers=headers, data=payload)
+
+            print(response.text)
                     
             formater = {
-                "master": masterserializer.data
+                "data": masterserializer.data,
             }
 
             return JsonResponse({'message': 'successfully', 'results': formater})
